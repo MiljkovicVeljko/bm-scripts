@@ -1,5 +1,4 @@
 const gridParent = document.querySelector('#variable_type_campaign_offers_messages')
-const elements = document.querySelectorAll('#variable_type_campaign_offers_messages input')
 let new_offer_id = null
 let new_uuid = null
 let isValid = false
@@ -13,6 +12,10 @@ function validateForm(fields) {
   }
 }
 
+function getFieldByAttribute(attribute, fieldType) {
+  return document.querySelector(`div[data-test-id="${attribute}"] ${fieldType}`)
+}
+
 addRecord.onclick = function () {
   new_uuid = uuidv4()
 
@@ -24,8 +27,16 @@ addRecord.onclick = function () {
     const controlButtons = panel.querySelector("div[role='toolbar']:last-child")
     const saveButton = controlButtons.querySelector("a[role='button']")
 
-    const fields = panel.querySelectorAll('input, textarea')
-    const reqFields = [fields[1], fields[2], fields[3], fields[4], fields[8], fields[9]]
+    // mapping all add record form fields
+    const offer_id_field = getFieldByAttribute('SingleInputLineColumn - offer_id', 'input')
+    const marketing_group_field = getFieldByAttribute('SingleSelectColumn - offer_mktg_group', 'input')
+    const message_desc_field = getFieldByAttribute('MultilineInputAreaColumn - offer_msg_desc', 'textarea')
+    const language_field = getFieldByAttribute('MultiSelectColumn - language_com', 'input')
+    const offer_start_date_field = getFieldByAttribute('DateInputLineColumn - offer_start_date', 'input')
+    const offer_end_date_field = getFieldByAttribute('DateInputLineColumn - offer_end_date', 'input')
+    const offer_guid_field = getFieldByAttribute('SingleInputLineColumn - offer_guid', 'input')
+    
+    const reqFields = [marketing_group_field, message_desc_field, language_field, offer_start_date_field, offer_end_date_field]
 
     saveButton.onclick = async function () {
       validateForm(reqFields)
@@ -44,11 +55,9 @@ addRecord.onclick = function () {
         }, 2000);
       }
     }
-  
-    let offerID = document.querySelector("div[data-test-id='SingleInputLineColumn - offer_id'] input[role='textbox']")
-    let offerGUID = document.querySelector("div:nth-of-type(33) > div > div[role='presentation'] > div[role='presentation'] > div[role='presentation'] input[role='textbox']")
-    let offerIDById = Ext.get(offerID.id)
-    let offerGUIDById = Ext.get(offerGUID.id)
+
+    let offerIDById = Ext.get(offer_id_field.id)
+    let offerGUIDById = Ext.get(offer_guid_field.id)
 
     Ext.getCmp(offerIDById.component.id).setValue(new_offer_id)
     Ext.getCmp(offerIDById.component.id).setReadOnly(true)
@@ -127,10 +136,7 @@ async function isContainedInChildActivitiy(offer_id) {
 var deleteButtons
 const getAllDeleteButtons = async () => {
   deleteButtons = document.querySelectorAll("a[data-qtip='Delete']")
-  // document.querySelectorAll("table[role='presentation']")
   var campaignOffersMessagesGridRows = await getCampaignOffersMessagesGridRows()
-  // customObjects = await getCustomObjectsForCustomStructureWithId(PM_Campaign_Offer_Message_ID_ID)
-  // console.log('getAllDeleteButtons customObjects.data');
   campaignOffersMessagesGridRows = sortGridDataDescByOfferId(campaignOffersMessagesGridRows)
   console.log(campaignOffersMessagesGridRows)
   console.log(customObjects.data)
@@ -139,20 +145,13 @@ const getAllDeleteButtons = async () => {
     const oldFunction = deleteButtons[i].onclick
     deleteButtons[i].onclick = async function () {
       console.log("Delete")
-      // initLoader();
-      // disableDeleteButtons(deleteButtons)
 
       let getIdOfRow = deleteButtons[i].parentElement.parentElement.parentElement.querySelectorAll('td')[1].querySelector('span').textContent
-      // deleteButtons[i].classList('offer-id-' + getIdOfRow)
       console.log(getIdOfRow);
-      // console.log(deleteButtons[i].classList);
-      // oldFunction()
-      // var offer_id = campaignOffersMessagesGridRows[i].values.offer_id
-      // console.log('offer_id')
-      // console.log(offer_id)
+
       customObjects = await getCustomObjectsForCustomStructureWithId(PM_Campaign_Offer_Message_ID_ID)
       var customObjectToBeDeleted = customObjects.data.find((obj) => obj.label.default == getIdOfRow)
-      // console.log(customObjectToBeDeleted)
+
       if(await isContainedInChildActivitiy(getIdOfRow))
         console.log("Offer/Message has been selected in an Activity and cannot be deleted")
       else{
@@ -163,10 +162,7 @@ const getAllDeleteButtons = async () => {
       }
       setTimeout(() => {
         getAllDeleteButtons()
-        // enableDeleteButtons(deleteButtons)
       }, 2000);
-      
-      // hideLoader()
     }
   }
 }
