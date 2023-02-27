@@ -6,8 +6,7 @@ let isValid = false
 const addRecord = document.querySelector('#variable_type_campaign_offers_messages-targetEl > div > div > div')
 
 function validateForm(fields) {
-  //Field [4] Validation missing
-  if(fields[0].value !=="" && fields[1].value !=="" && fields[2].value !=="" && fields[4].value !=="" && fields[5].value !==""){
+  if(fields[0].value !=="" && fields[1].value !=="" && fields[2].value !=="" && fields[3].value !=="" && fields[4].value !=="" && fields[5].querySelectorAll('li').length > 1 && fields[6].value !=="" && fields[7].value !==""){
     isValid = true;
   }
 }
@@ -26,22 +25,30 @@ addRecord.onclick = function () {
     const panel = document.querySelector('#variable_type_campaign_offers_messages-targetEl > div.x-panel > div')
     const controlButtons = panel.querySelector("div[role='toolbar']:last-child")
     const saveButton = controlButtons.querySelector("a[role='button']")
-
+    saveButton.textContent = "SAVE AND GENERATE GUID";
     // mapping all add record form fields
     const offer_id_field = getFieldByAttribute('SingleInputLineColumn - offer_id', 'input')
     const marketing_group_field = getFieldByAttribute('SingleSelectColumn - offer_mktg_group', 'input')
+    const advertised_product_field = getFieldByAttribute('SingleSelectColumn - desired_engagement', 'input')
+    const desired_engagement_field = getFieldByAttribute('SingleSelectColumn - advertised_product', 'input')
+    const travel_journey_field = getFieldByAttribute('SingleSelectColumn - trvl_stage', 'input')
     const message_desc_field = getFieldByAttribute('MultilineInputAreaColumn - offer_msg_desc', 'textarea')
-    const language_field = getFieldByAttribute('MultiSelectColumn - language_com', 'input')
+    const language_field = getFieldByAttribute('MultiSelectColumn - language_com', 'ul')
     const offer_start_date_field = getFieldByAttribute('DateInputLineColumn - offer_start_date', 'input')
     const offer_end_date_field = getFieldByAttribute('DateInputLineColumn - offer_end_date', 'input')
     const offer_guid_field = getFieldByAttribute('SingleInputLineColumn - offer_guid', 'input')
-    
-    const reqFields = [marketing_group_field, message_desc_field, language_field, offer_start_date_field, offer_end_date_field]
+    let offerGUIDById = Ext.get(offer_guid_field.id)
+
+    const reqFields = [marketing_group_field, advertised_product_field, desired_engagement_field, travel_journey_field, message_desc_field, language_field, offer_start_date_field, offer_end_date_field]
 
     saveButton.onclick = async function () {
       validateForm(reqFields)
+      console.log(isValid);
       if (isValid) {
         console.log("SAVE")
+        console.log(new_uuid);
+        console.log(offerGUIDById.component.id);
+        Ext.getCmp(offerGUIDById.component.id).setValue(new_uuid);
         var customObjects = await getCustomObjectsForCustomStructureWithId(PM_Campaign_Offer_Message_ID_ID)
         var offerIdCustomObject = customObjects.data.filter((obj) => obj.label.default == new_offer_id)
         if (offerIdCustomObject == null || offerIdCustomObject == undefined || offerIdCustomObject.length == 0) {
@@ -57,11 +64,9 @@ addRecord.onclick = function () {
     }
 
     let offerIDById = Ext.get(offer_id_field.id)
-    let offerGUIDById = Ext.get(offer_guid_field.id)
 
     Ext.getCmp(offerIDById.component.id).setValue(new_offer_id)
     Ext.getCmp(offerIDById.component.id).setReadOnly(true)
-    Ext.getCmp(offerGUIDById.component.id).setValue(new_uuid)
     Ext.getCmp(offerGUIDById.component.id).setReadOnly(true)
 
     observer.disconnect()
@@ -157,8 +162,12 @@ const getAllDeleteButtons = async () => {
       else{
         var deleteResponse = await deleteCustomObjectWithId(
           customObjectToBeDeleted != undefined ? customObjectToBeDeleted.id : -1)
-        if (deleteResponse != null)
+        if (deleteResponse != null){
           oldFunction()
+          deleteButtons = document.querySelectorAll("a[data-qtip='Delete']")
+          for (let i = 0; i < deleteButtons.length; i++)
+            deleteButtons[i].style.pointerEvents='none'
+        }
       }
       setTimeout(() => {
         getAllDeleteButtons()

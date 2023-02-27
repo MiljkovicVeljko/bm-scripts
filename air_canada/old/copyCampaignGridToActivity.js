@@ -2,29 +2,17 @@ var API_AUTH = { access_token: null }
 
 window.onload = async function () {
   console.log("COPY CAMPAIGN GRID LOADED")
-  const grid = document.querySelector('#variable_type_campaign_offer_message-targetEl > div.x-grid')
-  hideDeleteButtons()
-
-  document.querySelector('#variable_type_campaign_offer_message-targetEl > div').style.display = 'none'
-
   var variableInstanceId = await getActivityJobTypeCampaignOffersMessagesVariableInstanceId()
   // DELETE old grid
-  await deleteOfferMessageRowsInActivity(variableInstanceId)
+  const deleteRes = await deleteOfferMessageRowsInActivity(variableInstanceId)
+  console.log(deleteRes);
 
-  // CREATE new grid
   const rows = await getCampaignOffersMessagesGridRows()
-  rows.forEach(row => copyRowsInActivity(variableInstanceId, row.values))
-
-  // Refresh Grid
-  setTimeout(() => {
-    Ext.getCmp(Ext.get(grid.id).component.id).getView().refresh()
-    hideDeleteButtons()
-    console.log("TIMED OUT");
-  }, 5000);
-}
-
-function hideDeleteButtons() {
-  document.querySelectorAll("#variable_type_campaign_offer_message-targetEl a[data-qtip='Delete']").forEach(button => button.style.display = 'none')
+  
+  // CREATE new grid
+  for (let index = 0; index < rows.length; index++) {
+    copyRowsInActivity(variableInstanceId, rows[i].values)
+  }
 }
 
 async function getCampaignOffersMessagesGridRows() {
@@ -130,15 +118,15 @@ async function copyRowsInActivity(variableInstanceId, rowObj) {
 
 function formatRows(rows) {
   const filteredObj = Object.fromEntries(
-    Object.entries(rows).filter(([key, value]) => value !== 'null' && value.length !== 0 && value !== '[]')
-  )
+  Object.entries(rows).filter(([key, value]) => value !== 'null' && value.length !== 0 && value !== '[]')
+);
 
 
-  for (const key in filteredObj) {
-    filteredObj[key] = `\"${filteredObj[key]}\"`
-  }
+for (const key in filteredObj) {
+  filteredObj[key] = `\"${filteredObj[key]}\"`
+}
 
-  return filteredObj
+ return filteredObj;
 }
 
 async function getDseObject(instanceId, l10nLocaleId) {
