@@ -1,8 +1,10 @@
 var API_AUTH = { access_token: null }
+const addRecord = document.querySelector('#variable_type_versioning_and_deployment-targetEl > div > div > div')
+const gridParent = document.querySelector('#variable_type_versioning_and_deployment')
+const grid = document.querySelector('#variable_type_campaign_offer_message-targetEl > div.x-grid')
 
 window.onload = async function () {
   console.log("COPY CAMPAIGN GRID LOADED")
-  const grid = document.querySelector('#variable_type_campaign_offer_message-targetEl > div.x-grid')
   hideDeleteButtons()
 
   document.querySelector('#variable_type_campaign_offer_message-targetEl > div').style.display = 'none'
@@ -17,10 +19,82 @@ window.onload = async function () {
 
   // Refresh Grid
   setTimeout(() => {
-    Ext.getCmp(Ext.get(grid.id).component.id).getView().refresh()
+    const gridExt = Ext.getCmp(Ext.get(grid.id).component.id)
+    const store = gridExt.getStore()
+    store.load()
     hideDeleteButtons()
+    // gridExt.getView().refresh()
+
+    store.on('load', function () {
+      hideDeleteButtons()
+      // observer 
+      const gridParentMsg = document.querySelector('#variable_type_campaign_offer_message')
+      const gridRows = document.querySelectorAll('#variable_type_campaign_offer_message-targetEl div[role="grid"] table')
+    
+      gridRows.forEach(row => {
+        row.querySelector('td > div > div').onclick = function() {
+          const observerExpand = new MutationObserver(async function() {
+            row.querySelectorAll('td.x-grid-td.x-grid-cell-rowbody > div > div > div > div')[0].style.pointerEvents = 'none'
+            row.querySelectorAll('td.x-grid-td.x-grid-cell-rowbody > div > div > div > div')[1].style.display = 'none'
+      
+            observerExpand.disconnect();
+          })
+    
+          const config = {
+            childList: true,
+            childNodes: true,
+            attributes: true,
+            subtree: true
+          }
+          observerExpand.observe(gridParentMsg, config)
+        }
+      })
+    })
+    
+    // set expand form readOnly for each table row
     console.log("TIMED OUT");
-  }, 5000);
+  }, 1000);
+
+}
+
+function getFieldByAttribute(attribute, fieldType) {
+  return document.querySelector(`div[data-test-id="${attribute}"] ${fieldType}`)
+}
+
+
+//OBSERVER
+addRecord.onclick = function () {
+  console.log("Add record clicked");
+  new_uuid = uuidv4()
+  
+  const observer = new MutationObserver(async function () {
+    const panel = document.querySelector('#variable_type_versioning_and_deployment-targetEl > div.x-panel > div')
+    const controlButtons = panel.querySelector("div[role='toolbar']:last-child")
+    const saveButton = controlButtons.querySelector("a[role='button']")
+    saveButton.textContent = "SAVE/CREATE GUID";
+
+    const deploymentGuid = getFieldByAttribute("SingleInputLineColumn - endeployment_guid", "input")
+    let deploymentGuidById = Ext.get(deploymentGuid.id);
+    Ext.getCmp(deploymentGuidById.component.id).setReadOnly(true)
+
+    saveButton.onclick = function (){
+      console.log("SAVE");
+      Ext.getCmp(deploymentGuidById.component.id).setValue(new_uuid);
+    }
+
+
+    observer.disconnect();
+  })
+
+
+  const config = {
+    childList: true,
+    childNodes: true,
+    attributes: true,
+    subtree: true
+  }
+
+  observer.observe(gridParent, config)
 }
 
 function hideDeleteButtons() {
@@ -270,4 +344,10 @@ const getApiBearerToken = async () => {
       }
     })
   })
+}
+
+function uuidv4() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  )
 }

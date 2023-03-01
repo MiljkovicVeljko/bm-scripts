@@ -2,8 +2,24 @@ const gridParent = document.querySelector('#variable_type_campaign_offers_messag
 let new_offer_id = null
 let new_uuid = null
 let isValid = false
+let stepNumber = null;
 
-const addRecord = document.querySelector('#variable_type_campaign_offers_messages-targetEl > div > div > div')
+const addRecord = document.querySelectorAll('#variable_type_campaign_offers_messages-targetEl > div > div > div a')[0]
+const expendRecord = document.querySelectorAll('#variable_type_campaign_offers_messages-targetEl > div > div > div a')[1]
+
+const myPanel = Ext.create('Ext.panel.Panel', {
+  title: 'My Panel',
+  renderTo: Ext.getBody(),
+  width: Ext.getBody().getWidth(),
+  height: Ext.getBody().getHeight(),
+  visible: false,
+  id: 'spinner_grid',
+  layout: 'fit',
+  
+  // Add a loading mask
+  mask: '',
+  transparent: true
+});
 
 function validateForm(fields) {
   if(fields[0].value !=="" && fields[1].value !=="" && fields[2].value !=="" && fields[3].value !=="" && fields[4].value !=="" && fields[5].querySelectorAll('li').length > 1 && fields[6].value !=="" && fields[7].value !==""){
@@ -13,6 +29,86 @@ function validateForm(fields) {
 
 function getFieldByAttribute(attribute, fieldType) {
   return document.querySelector(`div[data-test-id="${attribute}"] ${fieldType}`)
+}
+function getFieldByAttributeExpand(target, attribute, fieldType) {
+  return target.querySelector(`div[data-test-id="${attribute}"] ${fieldType}`)
+}
+
+expendRecord.onclick = function () {
+  setTimeout(() => {
+    
+    const expendAddRecord = document.querySelector('#maximizeGrid-targetEl > div a')
+    const expandGridParent = document.querySelector('#maximizeGrid')
+  
+    console.log("%%%", expendAddRecord);
+  
+    expendAddRecord.onclick = function () {
+      new_uuid = uuidv4()
+  
+      const observer = new MutationObserver(async function () {
+        new_offer_id = await generateNewOfferId()
+        console.log('new_offer_id----X---->' + new_offer_id)
+    
+        const saveButton = document.querySelector('#maximizeGrid-targetEl div[role="toolbar"]:last-child a[role="button"]')
+        saveButton.textContent = "SAVE/CREATE GUID";
+
+        // mapping all add record form fields
+        const offer_id_field = getFieldByAttributeExpand(expandGridParent, 'SingleInputLineColumn - offer_id', 'input')
+        const marketing_group_field = getFieldByAttributeExpand(expandGridParent, 'SingleSelectColumn - offer_mktg_group', 'input')
+        const advertised_product_field = getFieldByAttributeExpand(expandGridParent, 'SingleSelectColumn - desired_engagement', 'input')
+        const desired_engagement_field = getFieldByAttributeExpand(expandGridParent, 'SingleSelectColumn - advertised_product', 'input')
+        const travel_journey_field = getFieldByAttributeExpand(expandGridParent, 'SingleSelectColumn - trvl_stage', 'input')
+        const message_desc_field = getFieldByAttributeExpand(expandGridParent, 'MultilineInputAreaColumn - offer_msg_desc', 'textarea')
+        const language_field = getFieldByAttributeExpand(expandGridParent, 'MultiSelectColumn - language_com', 'ul')
+        const offer_start_date_field = getFieldByAttributeExpand(expandGridParent, 'DateInputLineColumn - offer_start_date', 'input')
+        const offer_end_date_field = getFieldByAttributeExpand(expandGridParent, 'DateInputLineColumn - offer_end_date', 'input')
+        const offer_guid_field = getFieldByAttributeExpand(expandGridParent, 'SingleInputLineColumn - offer_guid', 'input')
+        let offerGUIDById = Ext.get(offer_guid_field.id)
+    
+        const reqFields = [marketing_group_field, advertised_product_field, desired_engagement_field, travel_journey_field, message_desc_field, language_field, offer_start_date_field, offer_end_date_field]
+
+        saveButton.onclick = async function () {
+          validateForm(reqFields)
+          console.log(isValid);
+          if (isValid) {
+            console.log("SAVE")
+            console.log(new_uuid);
+            console.log(offerGUIDById.component.id);
+            Ext.getCmp(offerGUIDById.component.id).setValue(new_uuid);
+            var customObjects = await getCustomObjectsForCustomStructureWithId(PM_Campaign_Offer_Message_ID_ID)
+            var offerIdCustomObject = customObjects.data.filter((obj) => obj.label.default == new_offer_id)
+            if (offerIdCustomObject == null || offerIdCustomObject == undefined || offerIdCustomObject.length == 0) {
+              var name = new_offer_id.split('-')[0] + "_" + new_offer_id.split('-')[1]
+              var state = "EDIT_AND_ADD"
+              await createCustomObject(name, new_offer_id, PM_Campaign_Offer_Message_ID_ID, state, null, null, null)
+            }
+    
+            setTimeout(() => {
+              getAllDeleteButtons()
+            }, 2000);
+          }
+        }
+    
+        let offerIDById = Ext.get(offer_id_field.id)
+    
+        Ext.getCmp(offerIDById.component.id).setValue(new_offer_id)
+        Ext.getCmp(offerIDById.component.id).setReadOnly(true)
+        Ext.getCmp(offerGUIDById.component.id).setReadOnly(true)
+    
+        observer.disconnect()
+      })
+    
+      const config = {
+        childList: true,
+        childNodes: true,
+        attributes: true,
+        subtree: true
+      }
+    
+      observer.observe(expandGridParent, config)
+    }
+  }, 1000);
+
 }
 
 addRecord.onclick = function () {
@@ -24,8 +120,9 @@ addRecord.onclick = function () {
 
     const panel = document.querySelector('#variable_type_campaign_offers_messages-targetEl > div.x-panel > div')
     const controlButtons = panel.querySelector("div[role='toolbar']:last-child")
-    const saveButton = controlButtons.querySelector("a[role='button']")
-    saveButton.textContent = "SAVE AND GENERATE GUID";
+    const saveButton = controlButtons?.querySelector("a[role='button']")
+    saveButton.textContent = "SAVE/CREATE GUID";
+
     // mapping all add record form fields
     const offer_id_field = getFieldByAttribute('SingleInputLineColumn - offer_id', 'input')
     const marketing_group_field = getFieldByAttribute('SingleSelectColumn - offer_mktg_group', 'input')
@@ -82,30 +179,15 @@ addRecord.onclick = function () {
   observer.observe(gridParent, config)
 }
 
-function initLoader() {
-  loaderMaskWindow = window.parent.parent.Ext.create("Ext.window.Window", {
-      width: "100%",
-      height: "100%",
-      layout: "fit",
-      header: false,
-      draggable: false,
-      resizable: false,
-  }).show();
-
-  loaderMask = new window.parent.parent.Ext.LoadMask({
-      target: loaderMaskWindow
-  });
-}
-
-function hideLoader() {
-  loaderMask.hide();
-  loaderMaskWindow.hide();
-}
 
 window.onload = async function () {
   new_offer_id = await generateNewOfferId()
   console.log('new_offer_id-------->' + new_offer_id)
-  
+
+  stepNumber = window.dseObjectConfig.stepNumber;
+  console.log(stepNumber);
+
+  myPanel.setVisible(false)
   getAllDeleteButtons()
 }
 
@@ -150,6 +232,9 @@ const getAllDeleteButtons = async () => {
     const oldFunction = deleteButtons[i].onclick
     deleteButtons[i].onclick = async function () {
       console.log("Delete")
+      
+      myPanel.setVisible(true)
+      myPanel.setLoading(true);
 
       let getIdOfRow = deleteButtons[i].parentElement.parentElement.parentElement.querySelectorAll('td')[1].querySelector('span').textContent
       console.log(getIdOfRow);
@@ -157,21 +242,28 @@ const getAllDeleteButtons = async () => {
       customObjects = await getCustomObjectsForCustomStructureWithId(PM_Campaign_Offer_Message_ID_ID)
       var customObjectToBeDeleted = customObjects.data.find((obj) => obj.label.default == getIdOfRow)
 
-      if(await isContainedInChildActivitiy(getIdOfRow))
-        console.log("Offer/Message has been selected in an Activity and cannot be deleted")
-      else{
-        var deleteResponse = await deleteCustomObjectWithId(
-          customObjectToBeDeleted != undefined ? customObjectToBeDeleted.id : -1)
-        if (deleteResponse != null){
-          oldFunction()
-          deleteButtons = document.querySelectorAll("a[data-qtip='Delete']")
-          for (let i = 0; i < deleteButtons.length; i++)
-            deleteButtons[i].style.pointerEvents='none'
+      if(await isContainedInChildActivitiy(getIdOfRow)) {
+        myPanel.setVisible(false)
+        myPanel.setLoading(false);
+        alert("Offer/Message has been selected in an Activity and cannot be deleted")
+      } else {
+        console.log('customObjectToBeDeleted', customObjectToBeDeleted);
+        var deleteResponse = null;
+        // var deleteResponse = await deleteCustomObjectWithId(customObjectToBeDeleted != undefined ? customObjectToBeDeleted.id : -1)
+
+        if (customObjectToBeDeleted) {
+          deleteResponse = await deleteCustomObjectWithId(customObjectToBeDeleted.id)
         }
+
+        console.log(deleteResponse);
+        if (deleteResponse != null)
+          oldFunction()
       }
       setTimeout(() => {
+        myPanel.setVisible(false)
+        myPanel.setLoading(false);
         getAllDeleteButtons()
-      }, 2000);
+      }, 5000);
     }
   }
 }
