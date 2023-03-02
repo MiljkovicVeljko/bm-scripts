@@ -39,8 +39,9 @@ expendRecord.onclick = function () {
     
     const expendAddRecord = document.querySelector('#maximizeGrid-targetEl > div a')
     const expandGridParent = document.querySelector('#maximizeGrid')
-  
-    console.log("%%%", expendAddRecord);
+    const expandRows = expandGridParent.querySelectorAll('#maximizeGrid-targetEl table')
+
+    disableExpandedRowIds(expandGridParent, expandRows)
   
     expendAddRecord.onclick = function () {
       new_uuid = uuidv4()
@@ -138,6 +139,7 @@ addRecord.onclick = function () {
 
     const reqFields = [marketing_group_field, advertised_product_field, desired_engagement_field, travel_journey_field, message_desc_field, language_field, offer_start_date_field, offer_end_date_field]
 
+
     saveButton.onclick = async function () {
       validateForm(reqFields)
       console.log(isValid);
@@ -187,8 +189,36 @@ window.onload = async function () {
   stepNumber = window.dseObjectConfig.stepNumber;
   console.log(stepNumber);
 
+  const gridParentMsg = document.querySelector('#variable_type_campaign_offers_messages')
+  const gridRows = document.querySelectorAll('#variable_type_campaign_offers_messages-targetEl div[role="grid"] table')
+
+  disableExpandedRowIds(gridParentMsg, gridRows)
+
   myPanel.setVisible(false)
   getAllDeleteButtons()
+}
+
+function disableExpandedRowIds(parentGrid, rows) {
+  rows.forEach(row => {
+    row.querySelector('td > div > div').onclick = function() {
+      const observerExpand = new MutationObserver(async function() {
+        const allRowFields = row.querySelectorAll('td.x-grid-td.x-grid-cell-rowbody > div > div > div > div > div > div > div')
+
+        allRowFields[0].style.pointerEvents = 'none'
+        allRowFields[allRowFields.length - 1].style.pointerEvents = 'none'
+  
+        observerExpand.disconnect();
+      })
+
+      const config = {
+        childList: true,
+        childNodes: true,
+        attributes: true,
+        subtree: true
+      }
+      observerExpand.observe(parentGrid, config)
+    }
+  })
 }
 
 async function isContainedInChildActivitiy(offer_id) {
@@ -228,6 +258,9 @@ const getAllDeleteButtons = async () => {
   console.log(campaignOffersMessagesGridRows)
   console.log(customObjects.data)
 
+  myPanel.setVisible(false)
+  myPanel.setLoading(false);
+
   for (let i = 0; i < deleteButtons.length; i++) {
     const oldFunction = deleteButtons[i].onclick
     deleteButtons[i].onclick = async function () {
@@ -260,10 +293,8 @@ const getAllDeleteButtons = async () => {
           oldFunction()
       }
       setTimeout(() => {
-        myPanel.setVisible(false)
-        myPanel.setLoading(false);
         getAllDeleteButtons()
-      }, 5000);
+      }, 2000);
     }
   }
 }
